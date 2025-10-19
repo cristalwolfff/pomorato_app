@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PomoRato</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&family=Pacifico&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+</head>
+<body class="font-body">
+
+    <div class="container mx-auto max-w-2xl p-4">
+        <header class="flex justify-between items-center py-4 border-b-2 border-yellow-400">
+            <div>
+                <img src="logo_horizontal_pomorato.png" alt="Logo PomoRato" class="h-12">
+            </div>
+            <nav class="flex items-center space-x-6">
+                <a href="#" id="report-btn" class="flex items-center space-x-2 text-gray-600 hover:text-gray-800">
+                    <img src="cheese_1.png" alt="Diário" class="w-8 h-8">
+                    <span class="font-bold">Diário</span>
+                </a>
+                <a href="#" id="settings-btn" class="flex items-center space-x-2 text-gray-600 hover:text-gray-800">
+                    <img src="rat_paw.png" alt="Configurações" class="w-8 h-8">
+                    <span class="font-bold">Configurações</span>
+                </a>
+            </nav>
+        </header>
+
+        <main class="text-center py-8">
+            <div class="flex justify-center items-center space-x-1 bg-gray-200 rounded-lg p-1 mb-8 max-w-sm mx-auto">
+                <button id="pomodoro-mode" class="btn-mode w-1/3 py-2 rounded-md font-bold text-gray-600 hover:bg-gray-300 transition">Pomodoro</button>
+                <button id="short-break-mode" class="btn-mode w-1/3 py-2 rounded-md font-bold text-gray-600 hover:bg-gray-300 transition">Pausa Curta</button>
+                <button id="long-break-mode" class="btn-mode w-1/3 py-2 rounded-md font-bold text-gray-600 hover:bg-gray-300 transition">Pausa Longa</button>
+            </div>
+
+            <h1 id="timer" class="text-8xl md:text-9xl font-bold text-gray-800 mb-8">25:00</h1>
+
+            <div class="mb-8 relative">
+                <img id="display-image" src="study_rat_1.png" alt="Imagem de um rato trabalhando" class="mx-auto rounded-lg">
+                <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3/4 mb-2">
+                    <div class="bg-gray-300 rounded-full h-2.5">
+                        <div id="progress-bar" class="bg-yellow-400 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="cycle-icons" class="flex justify-center space-x-4 mb-10">
+                </div>
+
+            <div class="flex justify-center space-x-8 mb-10">
+                <button id="pause-btn" class="control-btn disabled"><img src="pause_rat.png" class="w-16 h-16"></button>
+                <button id="start-btn" class="control-btn"><img src="play_rat.png" class="w-16 h-16"></button>
+                <button id="next-btn" class="control-btn"><img src="avancar_rat.png" class="w-16 h-16"></button>
+            </div>
+
+            <div class="border-t-2 border-gray-200 pt-6 text-left">
+                <p class="text-gray-500 mb-2 text-center"># Foco atual:</p>
+                <div id="current-task" class="text-xl font-bold mb-4 h-7 text-gray-800 text-center truncate">Nenhuma tarefa selecionada</div>
+                <div class="border-b-2 border-dashed border-gray-300 my-4"></div>
+
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Tarefas</h2>
+                    <div class="relative">
+                        <button id="task-menu-btn" class="p-1 text-gray-500 hover:text-gray-800">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                        </button>
+                        <div id="task-menu-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                            <a href="#" id="clear-finished-tasks-btn" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Limpar tarefas concluídas</a>
+                            <a href="#" id="clear-all-tasks-btn" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Limpar todas as tarefas</a>
+                        </div>
+                    </div>
+                </div>
+                <div id="task-list" class="space-y-2 mb-4">
+                    </div>
+                <button id="show-add-task-form-btn" class="w-full bg-gray-200 p-3 rounded-lg hover:bg-gray-300 transition text-gray-700 font-bold">
+                    + Adicionar Tarefa
+                </button>
+                <div id="add-task-form" class="hidden bg-gray-100 p-4 rounded-lg mt-2">
+                    <input type="text" id="task-name-input" placeholder="No que você está trabalhando?" class="w-full bg-white p-2 rounded-md mb-2 text-gray-800 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    <div class="flex items-center mb-2">
+                        <label for="task-est-input" class="text-sm font-medium text-gray-600 mr-2">Pomodoros Estimados:</label>
+                        <input type="number" id="task-est-input" value="1" min="1" class="w-16 bg-white p-1 rounded-md text-gray-800 border border-gray-300 text-center focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                    </div>
+                    <textarea id="task-notes-input" placeholder="Alguma nota..." rows="2" class="w-full bg-white p-2 rounded-md mb-2 text-gray-800 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-yellow-400"></textarea>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-2 my-2">
+    <div>
+        <label for="task-humor-input" class="text-sm font-medium text-gray-600">Humor:</label>
+        <input type="text" id="task-humor-input" placeholder="Estável" class="w-full bg-white p-1.5 rounded-md text-gray-800 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-yellow-400">
+    </div>
+    <div>
+        <label for="task-crise-input" class="text-sm font-medium text-gray-600">Crise:</label>
+        <input type="text" id="task-crise-input" placeholder="Não" class="w-full bg-white p-1.5 rounded-md text-gray-800 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-yellow-400">
+    </div>
+    <div>
+        <label for="task-energia-input" class="text-sm font-medium text-gray-600">Energia:</label>
+        <select id="task-energia-input" class="w-full bg-white p-1.5 rounded-md text-gray-800 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-yellow-400">
+            </select>
+    </div>
+    <div>
+        <label for="task-megafoco-input" class="text-sm font-medium text-gray-600">Megafoco:</label>
+        <select id="task-megafoco-input" class="w-full bg-white p-1.5 rounded-md text-gray-800 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-yellow-400">
+            </select>
+    </div>
+</div>
+                    <input type="text" id="task-project-input" list="project-list-add" placeholder="Nome do Projeto (opcional)" class="w-full bg-white p-2 rounded-md mb-2 text-gray-800 border border-gray-300 focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                    <datalist id="project-list-add"></datalist>
+                    <div class="text-right space-x-2">
+                        <button id="cancel-add-task-btn" class="bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500 transition">Cancelar</button>
+                        <button id="save-task-btn" class="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-black transition">Salvar</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="modal-container">
+        <div id="settings-modal" class="modal-overlay hidden">
+            <div class="modal-content font-body">
+                <button id="close-settings-modal-btn" class="modal-close-btn">&times;</button>
+                <h2 class="text-2xl font-bold mb-6 text-center border-b pb-2">Configurações</h2>
+                <div class="space-y-6">
+                    <section>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-700">⏱️ Timer</h3>
+                        <div class="grid grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label for="setting-pomodoro" class_("block text-sm font-medium text-gray-600 mb-1")>Pomodoro</label>
+                                <input type="number" id="setting-pomodoro" min="1" class="w-full p-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                            </div>
+                            <div>
+                                <label for="setting-shortBreak" class="block text-sm font-medium text-gray-600 mb-1">Pausa Curta</label>
+                                <input type="number" id="setting-shortBreak" min="1" class="w-full p-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                            </div>
+                            <div>
+                                <label for="setting-longBreak" class="block text-sm font-medium text-gray-600 mb-1">Pausa Longa</label>
+                                <input type="number" id="setting-longBreak" min="1" class="w-full p-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between mb-3 py-2 border-b">
+                            <label for="setting-autoStartBreaks" class="text-sm font-medium text-gray-700">Iniciar Pausas Automaticamente?</label>
+                            <label class="switch">
+                                <input type="checkbox" id="setting-autoStartBreaks">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                         <div class="flex items-center justify-between mb-3 py-2 border-b">
+                            <label for="setting-autoStartPomodoros" class="text-sm font-medium text-gray-700">Iniciar Pomodoros Automaticamente?</label>
+                            <label class="switch">
+                                <input type="checkbox" id="setting-autoStartPomodoros">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="flex items-center justify-between py-2">
+                            <label for="setting-longBreakInterval" class="text-sm font-medium text-gray-700">Intervalo da Pausa Longa</label>
+                            <input type="number" id="setting-longBreakInterval" min="1" class="w-20 p-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                        </div>
+                    </section>
+                    <section>
+                         <h3 class="text-lg font-semibold mb-3 text-gray-700">🔊 Som</h3>
+                         <div class="mb-4">
+                            <label for="setting-alarmSound" class="block text-sm font-medium text-gray-600 mb-1">Som do Alarme</label>
+                            <select id="setting-alarmSound" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                                <option value="C5">Padrão (C5)</option>
+                                <option value="E5">Tom Alto (E5)</option>
+                                <option value="G4">Tom Baixo (G4)</option>
+                                <option value="Bell">Sino</option>
+                                <option value="none">Nenhum</option>
+                            </select>
+                         </div>
+                         <div class="mb-2">
+                            <label for="setting-alarmVolume" class="block text-sm font-medium text-gray-600 mb-1">Volume do Alarme</label>
+                            <input type="range" id="setting-alarmVolume" min="0" max="1" step="0.05" class="w-full">
+                         </div>
+                        </section>
+                    <section>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-700">🔔 Notificações</h3>
+                        <div class="flex items-center justify-between py-2">
+                            <label for="setting-browserNotifications" class="text-sm font-medium text-gray-700">Habilitar Notificações do Navegador?</label>
+                            <label class="switch">
+                                <input type="checkbox" id="setting-browserNotifications">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <p id="notification-permission-status" class="text-xs text-gray-500 mt-1"></p>
+                    </section>
+                </div>
+                <div class="mt-8 text-right border-t pt-4">
+                    <button id="save-settings-btn" class="bg-yellow-500 text-white px-5 py-2 rounded-md hover:bg-yellow-600 transition font-bold">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="report-modal" class="modal-overlay hidden">
+    <div class="modal-content font-body">
+        <button id="close-report-modal-btn" class="modal-close-btn">&times;</button>
+        <h2 class="text-2xl font-bold mb-6 text-center border-b pb-2">Diário de Foco</h2>
+
+        <h3 class="text-lg font-semibold mb-3 text-gray-700">Resumo da Atividade</h3>
+        <div class="mb-6 bg-yellow-100 p-4 rounded-lg shadow grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="text-center">
+                <p class="text-sm text-gray-600">Pomodoros</p>
+                <p id="report-total-pomodoros" class="text-2xl font-bold text-gray-800">0</p>
+            </div>
+            <div class="text-center">
+                <p class="text-sm text-gray-600">Tempo Focado</p>
+                <p id="report-total-time" class="text-2xl font-bold text-gray-800">0h 0m</p>
+            </div>
+            <div class="text-center">
+                <p class="text-sm text-gray-600">Dias Acessados</p>
+                <p id="report-days-accessed" class="text-2xl font-bold text-gray-800">0</p>
+            </div>
+            <div class="text-center">
+                <p class="text-sm text-gray-600">Sequência</p>
+                <p id="report-day-streak" class="text-2xl font-bold text-gray-800">0</p>
+            </div>
+        </div>
+
+        <h3 class="text-lg font-semibold mb-3 text-gray-700">Horas Focadas (Últimos 7 Dias)</h3>
+        <div class="mb-6 bg-gray-50 p-4 rounded-lg shadow">
+            <canvas id="focus-chart" class="w-full"></canvas>
+        </div>
+
+        <h3 class="text-lg font-semibold mb-3 text-gray-700">Projetos</h3>
+        <div id="report-project-summary" class="mb-6 space-y-2 max-h-40 overflow-y-auto">
+            </div>
+
+        <h3 class="text-lg font-semibold mb-3 text-gray-700">Histórico de Sessões</h3>
+        <div id="report-session-list" class="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3 bg-gray-50">
+            <p class="text-gray-500 text-sm italic">Nenhuma sessão registrada ainda.</p>
+        </div>
+
+        <div class="mt-8 text-right border-t pt-4 flex justify-between items-center">
+            <button id="download-csv-btn" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition text-sm font-bold">
+                Download CSV
+            </button>
+            <button id="ok-report-btn" class="bg-yellow-500 text-white px-5 py-2 rounded-md hover:bg-yellow-600 transition font-bold">OK</button>
+        </div>
+    </div>
+</div>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3 text-gray-700">Histórico de Sessões</h3>
+                    <div id="report-session-list" class="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3 bg-gray-50">
+                        <p class="text-gray-500 text-sm italic">Nenhuma sessão registrada ainda.</p>
+                    </div>
+                </div>
+                <div class="mt-8 text-right border-t pt-4 flex justify-between items-center">
+                    <button id="download-csv-btn" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition text-sm font-bold">
+                        Download CSV
+                    </button>
+                    <button id="ok-report-btn" class="bg-yellow-500 text-white px-5 py-2 rounded-md hover:bg-yellow-600 transition font-bold">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

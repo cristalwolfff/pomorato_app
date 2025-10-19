@@ -1,0 +1,53 @@
+body { background-color: #ffffff; color: #2d3748; }
+.font-logo { font-family: 'Pacifico', cursive; }
+.font-body { font-family: 'Lexend', sans-serif; }
+.btn-mode.active { background-color: #4FD1C5; color: white; } /* Verde-água PomoRato */
+.hidden { display: none; }
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background-color: #ffffff; padding: 20px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; position: relative; border-top: 5px solid #FBBF24; /* Amarelo PomoRato */ }
+.modal-close-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #a0aec0; }
+.task-item.completed span:first-of-type { text-decoration: line-through; color: #a0aec0; }
+.task-item.completed svg.checkmark { color: #4FD1C5; /* Verde-água PomoRato */ }
+.task-item { transition: background-color 0.2s ease; }
+.task-item:hover { background-color: #edf2f7; }
+.task-item.selected { border-left-color: #FBBF24; /* Amarelo PomoRato */ background-color: #fefcbf; /* Amarelo bem claro */}
+
+/* Correção Bug 1: Garante opacidade 1 para imagens dentro dos botões de controle */
+.control-btn img { opacity: 1 !important; }
+.control-btn.disabled { cursor: not-allowed; opacity: 0.5; } /* Estilo para botão explicitamente desabilitado */
+
+/* Estilo customizado para input range (volume) */
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: #cbd5e0; border-radius: 5px; outline: none; opacity: 0.7; -webkit-transition: .2s; transition: opacity .2s; cursor: pointer; }
+input[type=range]:hover { opacity: 1; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; background: #FBBF24; /* Amarelo PomoRato */ border-radius: 50%; cursor: pointer; }
+input[type=range]::-moz-range-thumb { width: 18px; height: 18px; background: #FBBF24; border-radius: 50%; cursor: pointer; border: none; }
+
+/* Estilo para toggle switch */
+.switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; -webkit-transition: .4s; transition: .4s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; -webkit-transition: .4s; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: #4FD1C5; /* Verde-água PomoRato */ }
+input:focus + .slider { box-shadow: 0 0 1px #4FD1C5; }
+input:checked + .slider:before { -webkit-transform: translateX(26px); -ms-transform: translateX(26px); transform: translateX(26px); }
+
+/* Adicione isso no final do seu style.css */
+.project-summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f7fafc; /* bg-gray-100 */
+    border-radius: 6px;
+    border-left: 4px solid #FBBF24; /* Amarelo PomoRato */
+}
+
+.project-summary-item .project-name {
+    font-weight: 600;
+    color: #4a5568; /* text-gray-700 */
+}
+
+.project-summary-item .project-time {
+    font-weight: 700;
+    color: #2d3748; /* text-gray-800 */
+}
