@@ -51,3 +51,41 @@ input:checked + .slider:before { -webkit-transform: translateX(26px); -ms-transf
     font-weight: 700;
     color: #2d3748; /* text-gray-800 */
 }
+/* Estilos para botões de Edição/Exclusão no Diário */
+.session-actions {
+    opacity: 0; /* Começa invisível */
+    transition: opacity 0.2s ease-in-out;
+}
+
+.session-item:hover .session-actions {
+    opacity: 1; /* Fica visível no hover */
+}
+
+.btn-session-action {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 4px;
+}
+
+.btn-session-action.edit {
+    color: #a0aec0; /* text-gray-400 */
+}
+.btn-session-action.edit:hover {
+    color: #FBBF24; /* Amarelo */
+    background-color: #fefcbf; /* Amarelo claro */
+}
+
+.btn-session-action.delete {
+    color: #a0aec0; /* text-gray-400 */
+}
+.btn-session-action.delete:hover {
+    color: #e53e3e; /* Vermelho */
+    background-color: #fed7d7; /* Vermelho claro */
+}

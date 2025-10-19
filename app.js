@@ -99,6 +99,22 @@ const MEGAFOCO_OPTIONS = ["Não consegui identificar", "Sim", "Não"];
         reportSessionList: document.getElementById('report-session-list'),
         okReportBtn: document.getElementById('ok-report-btn'),
         downloadCsvBtn: document.getElementById('download-csv-btn'),
+        addManualSessionBtn: document.getElementById('add-manual-session-btn'),
+        manualSessionModal: document.getElementById('manual-session-modal'),
+        manualSessionForm: document.getElementById('manual-session-form'),
+        closeManualSessionModalBtn: document.getElementById('close-manual-session-modal-btn'),
+        cancelManualSessionBtn: document.getElementById('cancel-manual-session-btn'),
+        manualSessionModalTitle: document.getElementById('manual-session-modal-title'),
+        manualSessionIdInput: document.getElementById('manual-session-id'),
+        manualDateInput: document.getElementById('manual-date'),
+        manualDurationInput: document.getElementById('manual-duration'),
+        manualTaskNameInput: document.getElementById('manual-taskName'),
+        manualProjectNameInput: document.getElementById('manual-projectName'),
+        manualHumorInput: document.getElementById('manual-humor'),
+        manualCriseInput: document.getElementById('manual-crise'),
+        manualEnergiaInput: document.getElementById('manual-energia'),
+        manualMegafocoInput: document.getElementById('manual-megafoco'),
+        manualNotesInput: document.getElementById('manual-notes'),
     };
 let myPomoChart = null; // Variável global para guardar a instância do gráfico
     // --- Audio Synthesis ---
@@ -170,7 +186,15 @@ let myPomoChart = null; // Variável global para guardar a instância do gráfic
             if (loadedData) {
                 state.settings = { ...DEFAULT_SETTINGS, ...(loadedData.settings || {}) };
                 state.tasks = loadedData.tasks || [];
-                state.sessions = loadedData.sessions || [];
+                // ... dentro da função loadData
+            state.tasks = loadedData.tasks || [];
+            // GARANTE QUE TODAS AS SESSÕES TENHAM UM ID
+            state.sessions = (loadedData.sessions || []).map((session, index) => ({
+                ...session,
+                id: session.id || Date.now() + index 
+            }));
+            state.currentTaskId = loadedData.currentTaskId || null;
+// ...
                 state.currentTaskId = loadedData.currentTaskId || null;
                 state.pomodoroCount = loadedData.pomodoroCount || 0;
                state.tasks = state.tasks.map(task => ({
@@ -438,7 +462,7 @@ let myPomoChart = null; // Variável global para guardar a instância do gráfic
     };
 
     // --- Session & Reporting Logic ---
-   const saveSession = () => {
+   const saveSession = () => { 
     const currentTask = state.tasks.find(t => t.id === state.currentTaskId);
     if (!currentTask) return;
 
@@ -446,6 +470,7 @@ let myPomoChart = null; // Variável global para guardar a instância do gráfic
 
     // ADICIONA OS NOVOS DADOS AO REGISTRO DA SESSÃO
     state.sessions.push({
+        id: Date.now(),
         taskId: state.currentTaskId,
         taskName: currentTask.name,
         projectName: currentTask.project,
@@ -462,6 +487,85 @@ let myPomoChart = null; // Variável global para guardar a instância do gráfic
     saveData();
     renderTasks(); // RenderTasks é chamado aqui, o que é bom
 };
+// --- NOVAS FUNÇÕES PARA GERENCIAR SESSÕES MANUALMENTE ---
+
+const openManualSessionModal = (sessionToEdit = null) => {
+    // Popula os dropdowns de energia e megafoco
+    dom.manualEnergiaInput.innerHTML = ENERGIA_OPTIONS.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+    dom.manualMegafocoInput.innerHTML = MEGAFOCO_OPTIONS.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+
+    dom.manualSessionForm.reset(); // Limpa o formulário
+
+    if (sessionToEdit) {
+        // MODO EDIÇÃO
+        dom.manualSessionModalTitle.textContent = "Editar Registro";
+        dom.manualSessionIdInput.value = sessionToEdit.id;
+        // O formato da data do input é YYYY-MM-DD
+        dom.manualDateInput.value = new Date(sessionToEdit.endTime).toISOString().split('T')[0];
+        dom.manualDurationInput.value = sessionToEdit.duration;
+        dom.manualTaskNameInput.value = sessionToEdit.taskName;
+        dom.manualProjectNameInput.value = sessionToEdit.projectName === 'Sem Projeto' ? '' : sessionToEdit.projectName;
+        dom.manualHumorInput.value = sessionToEdit.humor || '';
+        dom.manualCriseInput.value = sessionToEdit.crise || '';
+        dom.manualEnergiaInput.value = sessionToEdit.energia || ENERGIA_OPTIONS[0];
+        dom.manualMegafocoInput.value = sessionToEdit.megafoco || MEGAFOCO_OPTIONS[0];
+        dom.manualNotesInput.value = sessionToEdit.notes || '';
+    } else {
+        // MODO ADIÇÃO
+        dom.manualSessionModalTitle.textContent = "Adicionar Registro Manual";
+        dom.manualSessionIdInput.value = ''; // Garante que o ID está limpo
+        dom.manualDateInput.valueAsDate = new Date(); // Padrão para hoje
+    }
+
+    dom.manualSessionModal.classList.remove('hidden');
+};
+
+const saveManualSession = (event) => {
+    event.preventDefault(); // Impede o recarregamento da página
+
+    const sessionId = parseInt(dom.manualSessionIdInput.value);
+    const dateValue = dom.manualDateInput.value; // "YYYY-MM-DD"
+    // Pega a hora atual para manter a consistência
+    const timeValue = new Date().toTimeString().split(' ')[0]; // "HH:MM:SS"
+    const endTimeISO = new Date(`${dateValue}T${timeValue}`).toISOString();
+
+    const sessionData = {
+        id: sessionId || Date.now(),
+        duration: parseInt(dom.manualDurationInput.value),
+        taskName: dom.manualTaskNameInput.value.trim() || "Tarefa Manual",
+        projectName: dom.manualProjectNameInput.value.trim() || "Sem Projeto",
+        endTime: endTimeISO,
+        humor: dom.manualHumorInput.value.trim() || "Estável",
+        crise: dom.manualCriseInput.value.trim() || "Não",
+        energia: dom.manualEnergiaInput.value,
+        megafoco: dom.manualMegafocoInput.value,
+        notes: dom.manualNotesInput.value.trim()
+    };
+
+    if (sessionId) {
+        // Atualiza a sessão existente
+        const index = state.sessions.findIndex(s => s.id === sessionId);
+        if (index > -1) {
+            state.sessions[index] = sessionData;
+        }
+    } else {
+        // Adiciona nova sessão
+        state.sessions.push(sessionData);
+    }
+
+    saveData();
+    renderReport(); // Atualiza a lista na tela
+    dom.manualSessionModal.classList.add('hidden');
+};
+
+const deleteSession = (sessionId) => {
+    if (confirm("Tem certeza que deseja excluir este registro?")) {
+        state.sessions = state.sessions.filter(s => s.id !== sessionId);
+        saveData();
+        renderReport(); // Re-renderiza o diário
+    }
+};
+// --- FIM DAS NOVAS FUNÇÕES ---
     
     // FUNÇÃO AJUDANTE: formatar minutos para H:M
     const formatMinutesToHours = (totalMinutes) => {
@@ -625,18 +729,38 @@ let myPomoChart = null; // Variável global para guardar a instância do gráfic
         // 3. Renderiza o resumo por projeto
         renderProjectSummary(state.sessions);
 
-        // 4. Renderiza o histórico (como já fazia)
-        if (state.sessions.length === 0) { 
-            dom.reportSessionList.innerHTML = `<p class="text-gray-500 text-sm italic">Nenhuma sessão registrada ainda.</p>`; 
-        } else { 
-            dom.reportSessionList.innerHTML = state.sessions.slice().reverse().map(session => { 
-                const endTime = new Date(session.endTime); 
-                const formattedTime = endTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); 
-                const formattedDate = endTime.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }); 
-                return `<div class="p-2 border-b last:border-b-0 text-sm"><span class="font-semibold">${session.taskName}</span> ${session.projectName !== 'Sem Projeto' ? `<span class="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded ml-1">${session.projectName}</span>` : ''} <span class="text-gray-500 float-right">${formattedDate} ${formattedTime} (${session.duration}m)</span></div>`; 
-            }).join(''); 
-        }
-    };
+       // 4. Renderiza o histórico (como já fazia)
+    if (state.sessions.length === 0) { 
+        dom.reportSessionList.innerHTML = `<p class="text-gray-500 text-sm italic">Nenhuma sessão registrada ainda.</p>`; 
+    } else { 
+        // Ordena as sessões pela data de término, da mais recente para a mais antiga
+        const sortedSessions = state.sessions.sort((a, b) => new Date(b.endTime) - new Date(a.endTime));
+
+        dom.reportSessionList.innerHTML = sortedSessions.map(session => { 
+            const endTime = new Date(session.endTime); 
+            const formattedTime = endTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); 
+            const formattedDate = endTime.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }); 
+
+            // Note o 'data-session-id' nos botões
+            return `
+            <div class="session-item flex items-center justify-between p-2 border-b last:border-b-0 text-sm hover:bg-gray-100">
+                <div class="flex-grow">
+                    <span class="font-semibold">${session.taskName}</span> 
+                    ${session.projectName && session.projectName !== 'Sem Projeto' ? `<span class="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded ml-1">${session.projectName}</span>` : ''}
+                    <div class="text-xs text-gray-500">${formattedDate} ${formattedTime} (${session.duration}m)</div>
+                </div>
+                <div class="session-actions flex-shrink-0">
+                    <button class="btn-session-action edit" data-session-id="${session.id}" title="Editar">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"></path></svg>
+                    </button>
+                    <button class="btn-session-action delete" data-session-id="${session.id}" title="Excluir">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"></path></svg>
+                    </button>
+                </div>
+            </div>`; 
+        }).join(''); 
+    }
+};
 
     // --- CSV Export ---
     const escapeCsvCell = (cellData) => {
@@ -908,9 +1032,36 @@ let myPomoChart = null; // Variável global para guardar a instância do gráfic
         dom.closeReportModalBtn.addEventListener('click', () => dom.reportModal.classList.add('hidden'));
         dom.okReportBtn.addEventListener('click', () => dom.reportModal.classList.add('hidden'));
         dom.downloadCsvBtn.addEventListener('click', exportSessionsToCSV);
+        dom.addManualSessionBtn.addEventListener('click', () => openManualSessionModal());
+    dom.closeManualSessionModalBtn.addEventListener('click', () => dom.manualSessionModal.classList.add('hidden'));
+    dom.cancelManualSessionBtn.addEventListener('click', () => dom.manualSessionModal.classList.add('hidden'));
+    dom.manualSessionForm.addEventListener('submit', saveManualSession);
 
-        [dom.settingsModal, dom.reportModal].forEach(modal => { modal.addEventListener('click', (e) => { if (e.target === modal) { modal.classList.add('hidden'); } }); });
-    };
+    // Usa 'event delegation' pois os botões de editar/excluir são criados dinamicamente
+    dom.reportSessionList.addEventListener('click', (e) => {
+        const editButton = e.target.closest('.btn-session-action.edit');
+        const deleteButton = e.target.closest('.btn-session-action.delete');
+
+        if (editButton) {
+            const sessionId = parseInt(editButton.dataset.sessionId);
+            const session = state.sessions.find(s => s.id === sessionId);
+            if (session) openManualSessionModal(session);
+        }
+
+        if (deleteButton) {
+            const sessionId = parseInt(deleteButton.dataset.sessionId);
+            deleteSession(sessionId);
+        }
+    });
+
+       [dom.settingsModal, dom.reportModal, dom.manualSessionModal].forEach(modal => { 
+        modal.addEventListener('click', (e) => { 
+            if (e.target === modal) { 
+                modal.classList.add('hidden'); 
+            } 
+        }); 
+    });
+};
 
     // --- Initialization ---
     const init = () => {
