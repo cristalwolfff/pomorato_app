@@ -14,7 +14,7 @@ body { background-color: #ffffff; color: #2d3748; }
 
 /* Correção Bug 1: Garante opacidade 1 para imagens dentro dos botões de controle */
 .control-btn img { opacity: 1 !important; }
-.control-btn.disabled { cursor: not-allowed; opacity: 0.5; } /* Estilo para botão explicitamente desabilitado */
+.control-btn.disabled { cursor: not-allowed; } /* Estilo para botão explicitamente desabilitado */
 
 /* Estilo customizado para input range (volume) */
 input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: #cbd5e0; border-radius: 5px; outline: none; opacity: 0.7; -webkit-transition: .2s; transition: opacity .2s; cursor: pointer; }
@@ -88,4 +88,41 @@ input:checked + .slider:before { -webkit-transform: translateX(26px); -ms-transf
 .btn-session-action.delete:hover {
     color: #e53e3e; /* Vermelho */
     background-color: #fed7d7; /* Vermelho claro */
+}
+/* Estilo opcional para o novo botão de Encerrar */
+#stop-btn:not(.disabled):hover img {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+/* --- Lógica de Hover para Botões de Controle --- */
+
+/* 1. Posiciona as duas imagens no mesmo lugar (uma em cima da outra) */
+.control-btn {
+    position: relative;
+}
+.control-btn .img-state,
+.control-btn .img-hover {
+    /* Faz a imagem de hover ficar exatamente em cima da de estado */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.1s ease-in-out;
+}
+
+/* 2. Esconde a imagem de hover por padrão */
+.control-btn .img-hover {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* 3. Mostra a imagem de hover quando o mouse passa E o botão NÃO está desabilitado */
+.control-btn:not(:disabled):hover .img-state {
+    opacity: 0; /* Esconde a imagem de estado */
+    visibility: hidden;
+}
+.control-btn:not(:disabled):hover .img-hover {
+    opacity: 1; /* Mostra a imagem de hover */
+    visibility: visible;
 }

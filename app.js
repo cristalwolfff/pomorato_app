@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
         pause: 'pause_rat.png',
         pauseActive: 'pause_rat_turquesa.png', // Image shown when timer IS paused
         next: 'avancar_rat.png',
+        stop: 'stop_rat.png',
+        stopActive: 'stop_rat_red.png', // Image shown when timer IS stopped
         ratInactive: 'mouse_white_1.png',
         ratActive: 'mouse_yellow_1.png',
         checkmarkEmpty: `<svg class="w-6 h-6 text-gray-400 mr-2 flex-shrink-0 cursor-pointer checkmark" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
@@ -43,6 +45,7 @@ const MEGAFOCO_OPTIONS = ["Não consegui identificar", "Sim", "Não"];
         timerDisplay: document.getElementById('timer'),
         startBtn: document.getElementById('start-btn'),
         pauseBtn: document.getElementById('pause-btn'),
+        stopBtn: document.getElementById('stop-btn'),
         nextBtn: document.getElementById('next-btn'),
         modeButtons: {
             pomodoro: document.getElementById('pomodoro-mode'),
@@ -301,10 +304,13 @@ let myPomoChart = null; // Variável global para guardar a instância do gráfic
         playSound();
         sendNotification(`${MODE_NAMES[previousMode]} concluído!`);
 
-        if (previousMode === MODES.POMODORO) {
-            state.pomodoroCount++;
-            saveSession();
-        }
+      // Salva a sessão PARA QUALQUER MODO (Pomodoro, Pausa Curta ou Longa)
+saveSession(previousMode);
+
+if (previousMode === MODES.POMODORO) {
+    state.pomodoroCount++;
+    // A linha saveSession() foi movida para cima
+}
 
         let nextMode;
         if (previousMode === MODES.POMODORO) {
@@ -462,30 +468,76 @@ let myPomoChart = null; // Variável global para guardar a instância do gráfic
     };
 
     // --- Session & Reporting Logic ---
-   const saveSession = () => { 
-    const currentTask = state.tasks.find(t => t.id === state.currentTaskId);
-    if (!currentTask) return;
+ const saveSession = (finishedMode, durationOverride = null) => {
+    // Pega o nome do timer, ex: "Pomodoro", "Pausa Curta"
+    const timerTypeName = MODE_NAMES[finishedMode]; 
 
-    currentTask.act = (currentTask.act || 0) + 1;
-
-    // ADICIONA OS NOVOS DADOS AO REGISTRO DA SESSÃO
-    state.sessions.push({
+    const sessionData = {
         id: Date.now(),
-        taskId: state.currentTaskId,
-        taskName: currentTask.name,
-        projectName: currentTask.project,
-        duration: state.settings.pomodoro,
         endTime: new Date().toISOString(),
-        // Pega os dados da tarefa no momento em que a sessão termina
-        humor: currentTask.humor,
-        energia: currentTask.energia,
-        megafoco: currentTask.megafoco,
-        crise: currentTask.crise,
-        notes: currentTask.notes // Adiciona as notas
-    });
+        duration: durationOverride !== null ? durationOverride : state.settings[finishedMode], // Pega a duração correta
+        timerType: timerTypeName, // Salva o tipo de timer
 
+        // --- Valores Padrão ---
+        taskId: null,
+        taskName: timerTypeName, // Ex: "Pausa Curta"
+        projectName: "Descanso", // O padrão agora é sempre "Descanso"
+        humor: "N/A",
+        energia: "N/A",
+        megafoco: "N/A",
+        crise: "N/A",
+        notes: ""
+    };
+
+    // --- Lógica Unificada ---
+    // Puxa os dados da tarefa ATUAL, não importa o modo (Pomodoro ou Pausa)
+    const currentTask = state.tasks.find(t => t.id === state.currentTaskId);
+
+    if (currentTask) {
+        // Sobrescreve os valores padrão com os dados da tarefa selecionada
+        sessionData.taskId = state.currentTaskId;
+        sessionData.taskName = currentTask.name; 
+        
+        // --- LÓGICA DO PROJETO (Sua nova regra) ---
+        if (finishedMode === MODES.POMODORO) {
+            // Se for Pomodoro, usa o projeto da tarefa
+            sessionData.projectName = currentTask.project; 
+        } else {
+            // Se for Pausa Curta ou Longa, força o projeto "Descanso"
+            sessionData.projectName = "Descanso"; 
+        }
+        // --- FIM DA LÓGICA DO PROJETO ---
+
+        // O restante dos dados (humor, energia, etc.) são pegos da tarefa atual
+        sessionData.humor = currentTask.humor;
+        sessionData.energia = currentTask.energia;
+        sessionData.megafoco = currentTask.megafoco;
+        sessionData.crise = currentTask.crise;
+        sessionData.notes = currentTask.notes;
+
+    } else {
+        // Se não houver tarefa selecionada...
+        if (finishedMode === MODES.POMODORO) {
+             sessionData.taskName = "Pomodoro (sem tarefa)";
+             sessionData.projectName = "Sem Projeto"; // Pomodoro sem tarefa fica "Sem Projeto"
+        }
+        // (Se for pausa sem tarefa, os padrões "Pausa Curta" / "Descanso" são mantidos)
+    }
+
+    // Adiciona a nova sessão (seja Pomodoro ou Pausa) ao histórico
+    state.sessions.push(sessionData);
     saveData();
-    renderTasks(); // RenderTasks é chamado aqui, o que é bom
+
+    // --- Lógica Específica do Pomodoro ---
+    if (finishedMode === MODES.POMODORO) {
+        if (currentTask) {
+            // Incrementa o contador da tarefa
+            currentTask.act = (currentTask.act || 0) + 1;
+        }
+        
+        // Re-renderiza a lista de tarefas para atualizar o contador (ex: 1/3)
+        renderTasks(); 
+    }
 };
 // --- NOVAS FUNÇÕES PARA GERENCIAR SESSÕES MANUALMENTE ---
 
@@ -535,6 +587,7 @@ const saveManualSession = (event) => {
         taskName: dom.manualTaskNameInput.value.trim() || "Tarefa Manual",
         projectName: dom.manualProjectNameInput.value.trim() || "Sem Projeto",
         endTime: endTimeISO,
+        timerType: "Pomodoro",
         humor: dom.manualHumorInput.value.trim() || "Estável",
         crise: dom.manualCriseInput.value.trim() || "Não",
         energia: dom.manualEnergiaInput.value,
@@ -780,7 +833,7 @@ const deleteSession = (sessionId) => {
     }
 
     // NOVOS CABEÇALHOS (Headers) - Adicionei "Notas"
-    const headers = ["Data", "Hora Fim", "Projeto", "Tarefa", "Duracao (min)", "Humor", "Energia", "Megafoco", "Crise", "Notas"];
+    const headers = ["Data", "Hora Fim", "Tipo de Timer", "Projeto", "Tarefa", "Duracao (min)", "Humor", "Energia", "Megafoco", "Crise", "Notas"];
 
     const rows = state.sessions.map(session => {
         const endTime = new Date(session.endTime);
@@ -791,6 +844,7 @@ const deleteSession = (sessionId) => {
         return [
             formattedDate,
             formattedTime,
+            escapeCsvCell(session.timerType || 'Pomodoro'),
             escapeCsvCell(session.projectName),
             escapeCsvCell(session.taskName),
             session.duration,
@@ -929,7 +983,7 @@ const deleteSession = (sessionId) => {
     addTasksEventListeners();
 };
 
-    const renderUI = () => {
+   const renderUI = () => {
         Object.values(dom.modeButtons).forEach(btn => btn.classList.remove('active'));
         if (dom.modeButtons[state.currentMode]) {
             dom.modeButtons[state.currentMode].classList.add('active');
@@ -939,15 +993,24 @@ const deleteSession = (sessionId) => {
         updateProgressBar();
 
         if (state.isRunning) {
-            dom.startBtn.querySelector('img').src = IMAGES.playActive;
-            dom.pauseBtn.querySelector('img').src = IMAGES.pause;
+            dom.startBtn.querySelector('.img-state').src = IMAGES.playActive; // ATUALIZADO
+            dom.pauseBtn.querySelector('.img-state').src = IMAGES.pause; // ATUALIZADO
             dom.startBtn.classList.add('disabled');
             dom.pauseBtn.classList.remove('disabled');
+
+            // LÓGICA ATUALIZADA DO BOTÃO STOP
+            dom.stopBtn.classList.remove('disabled'); 
+            dom.stopBtn.querySelector('.img-state').src = IMAGES.stopActive; // ATUALIZADO
+
         } else {
-            dom.startBtn.querySelector('img').src = IMAGES.play;
-            dom.pauseBtn.querySelector('img').src = IMAGES.pauseActive;
+            dom.startBtn.querySelector('.img-state').src = IMAGES.play; // ATUALIZADO
+            dom.pauseBtn.querySelector('.img-state').src = IMAGES.pauseActive; // ATUALIZADO
             dom.startBtn.classList.remove('disabled');
             dom.pauseBtn.classList.add('disabled');
+
+            // LÓGICA ATUALIZADA DO BOTÃO STOP
+            dom.stopBtn.classList.add('disabled'); 
+            dom.stopBtn.querySelector('.img-state').src = IMAGES.stop; // ATUALIZADO
         }
         renderCycleIcons();
         renderTasks();
@@ -960,9 +1023,44 @@ const deleteSession = (sessionId) => {
         dom.taskList.querySelectorAll('.edit-task-btn').forEach(el => { el.addEventListener('click', (e) => { e.stopPropagation(); const taskId = parseInt(e.currentTarget.dataset.taskId); toggleEditTask(taskId); }); });
         dom.taskList.querySelectorAll('.edit-form').forEach(form => { const taskId = parseInt(form.closest('.task-item').querySelector('.edit-task-btn').dataset.taskId); form.querySelector('.cancel-edit-btn').addEventListener('click', () => { const task = state.tasks.find(t => t.id === taskId); if(task) task.isEditing = false; renderTasks(); }); form.querySelector('.save-edit-btn').addEventListener('click', () => { saveTaskEdit(taskId, form); }); form.querySelector('.delete-task-btn').addEventListener('click', () => { deleteTask(taskId); }); });
     };
+const stopTimer = () => {
+        if (!state.isRunning) return; // Só funciona se o timer estiver rodando
 
+        if (!confirm('Tem certeza que deseja encerrar este timer? O tempo parcial será registrado.')) {
+            return;
+        }
+    
+        const totalSeconds = state.settings[state.currentMode] * 60;
+        const elapsedSeconds = totalSeconds - state.timeLeft;
+        const finishedMode = state.currentMode; // Salva o modo atual
+
+        // Se o tempo for muito curto (ex: < 30s), apenas pare e resete, não salve.
+        if (elapsedSeconds < 30) {
+            pauseTimer();
+            resetTimer();
+            sendNotification(`${MODE_NAMES[finishedMode]} interrompido.`);
+            return; 
+        }
+
+        // Arredonda para o minuto mais próximo
+        const elapsedMinutes = Math.round(elapsedSeconds / 60);
+        
+        // Garante que salve no mínimo 1 minuto se arredondar para 0
+        const finalDuration = Math.max(1, elapsedMinutes); 
+
+        pauseTimer(); // Para o intervalo, define isRunning = false
+    
+        // Chama saveSession com a duração customizada (finalDuration)
+        saveSession(finishedMode, finalDuration);
+    
+        playSound();
+        sendNotification(`${MODE_NAMES[finishedMode]} encerrado com ${finalDuration} min.`);
+    
+        // Reseta o timer para o modo atual (ex: 25:00)
+        resetTimer(); 
+    };
     const initTimerControls = () => {
-        dom.startBtn.addEventListener('click', startTimer); dom.pauseBtn.addEventListener('click', pauseTimer); dom.nextBtn.addEventListener('click', skipToNextMode);
+        dom.stopBtn.addEventListener('click', stopTimer); dom.startBtn.addEventListener('click', startTimer); dom.pauseBtn.addEventListener('click', pauseTimer); dom.nextBtn.addEventListener('click', skipToNextMode);
         dom.modeButtons.pomodoro.addEventListener('click', () => switchToMode(MODES.POMODORO)); dom.modeButtons.shortBreak.addEventListener('click', () => switchToMode(MODES.SHORT_BREAK)); dom.modeButtons.longBreak.addEventListener('click', () => switchToMode(MODES.LONG_BREAK));
     };
 

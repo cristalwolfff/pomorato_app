@@ -56,10 +56,23 @@
             <div id="cycle-icons" class="flex justify-center space-x-4 mb-10">
                 </div>
 
-            <div class="flex justify-center space-x-8 mb-10">
-                <button id="pause-btn" class="control-btn disabled"><img src="pause_rat.png" class="w-16 h-16"></button>
-                <button id="start-btn" class="control-btn"><img src="play_rat.png" class="w-16 h-16"></button>
-                <button id="next-btn" class="control-btn"><img src="avancar_rat.png" class="w-16 h-16"></button>
+      <div class="flex justify-center space-x-4 mb-10">
+                <button id="pause-btn" class="control-btn disabled w-16 h-16" title="Pausar">
+                    <img class="img-state" src="pause_rat.png" alt="Pausar">
+                    <img class="img-hover" src="pause_rat_turquesa.png" alt="Pausar Hover">
+                </button>
+                <button id="start-btn" class="control-btn w-16 h-16" title="Iniciar">
+                    <img class="img-state" src="play_rat.png" alt="Iniciar">
+                    <img class="img-hover" src="play_rat_turquesa.png" alt="Iniciar Hover">
+                </button>
+                <button id="stop-btn" class="control-btn disabled w-16 h-16" title="Encerrar Timer">
+                    <img class="img-state" src="stop_rat.png" alt="Encerrar">
+                    <img class="img-hover" src="stop_rat_red.png" alt="Encerrar Hover">
+                </button>
+                <button id="next-btn" class="control-btn w-16 h-16" title="Avançar">
+                    <img class="img-state" src="avancar_rat.png" alt="Avançar">
+                    <img class="img-hover" src="avancar_rat_turquesa.png" alt="Avançar Hover">
+                </button>
             </div>
 
             <div class="border-t-2 border-gray-200 pt-6 text-left">
@@ -173,6 +186,7 @@
                                 <option value="G4">Tom Baixo (G4)</option>
                                 <option value="Bell">Sino</option>
                                 <option value="none">Nenhum</option>
+                        
                             </select>
                          </div>
                          <div class="mb-2">
