@@ -3,9 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const DEFAULT_SETTINGS = {
         pomodoro: 25, shortBreak: 5, longBreak: 15, longBreakInterval: 4,
         autoStartBreaks: false, autoStartPomodoros: false,
-        soundPomodoro: 'pomorato_codigo_fragmentado/squeak_1_som.mp3',     // Som padrão para Pomodoro
-        soundShortBreak: 'pomorato_codigo_fragmentado/vai_um_golinho_som.mp3',  // Som padrão para Pausa Curta
-        soundLongBreak: 'pomorato_codigo_fragmentado/aceita_cafe_som.mp3',     // Som padrão para Pausa Longa
+        soundPomodoro: 'squeak_1_som.mp3',     // Som padrão para Pomodoro
+        soundShortBreak: 'vai_um_golinho_som.mp3',  // Som padrão para Pausa Curta
+        soundLongBreak: 'aceita_cafe_som.mp3',     // Som padrão para Pausa Longa
         alarmVolume: 0.5,
         browserNotifications: false
     };
@@ -28,10 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
    // SONS DISPONÍVEIS
     const SOUNDS = {
-        'Som 1 (MP3)': 'pomorato_codigo_fragmentado/squeak_1_som.mp3',
-        'Som 2 (MP3)': 'pomorato_codigo_fragmentado/squeak_2_som.mp3',
-        'Som 3 (MP3)': 'pomorato_codigo_fragmentado/vai_um_golinho_som.mp3',
-        'Som 4 (MP3)': 'pomorato_codigo_fragmentado/aceita_cafe_som.mp3',
+        'Som 1 (MP3)': 'squeak_1_som.mp3',
+        'Som 2 (MP3)': 'squeak_2_som.mp3',
+        'Som 3 (MP3)': 'vai_um_golinho_som.mp3',
+        'Som 4 (MP3)': 'aceita_cafe_som.mp3',
         'Sino (Sintetizado)': 'Bell',
         'Padrão (Sintetizado)': 'C5',
         'Tom Alto (Sintetizado)': 'E5',
