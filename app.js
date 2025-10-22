@@ -3,7 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const DEFAULT_SETTINGS = {
         pomodoro: 25, shortBreak: 5, longBreak: 15, longBreakInterval: 4,
         autoStartBreaks: false, autoStartPomodoros: false,
-        alarmSound: 'C5', alarmVolume: 0.5,
+        soundPomodoro: 'pomorato_codigo_fragmentado/squeak_1_som.mp3',     // Som padrão para Pomodoro
+        soundShortBreak: 'pomorato_codigo_fragmentado/vai_um_golinho_som.mp3',  // Som padrão para Pausa Curta
+        soundLongBreak: 'pomorato_codigo_fragmentado/aceita_cafe_som.mp3',     // Som padrão para Pausa Longa
+        alarmVolume: 0.5,
         browserNotifications: false
     };
     const MODES = { POMODORO: 'pomodoro', SHORT_BREAK: 'shortBreak', LONG_BREAK: 'longBreak' };
@@ -23,6 +26,39 @@ document.addEventListener('DOMContentLoaded', () => {
         studyRat: 'study_rat_1.png',
         breakRat: 'relax_rat_1.png'
     };
+   // SONS DISPONÍVEIS
+    const SOUNDS = {
+        'Som 1 (MP3)': 'pomorato_codigo_fragmentado/squeak_1_som.mp3',
+        'Som 2 (MP3)': 'pomorato_codigo_fragmentado/squeak_2_som.mp3',
+        'Som 3 (MP3)': 'pomorato_codigo_fragmentado/vai_um_golinho_som.mp3',
+        'Som 4 (MP3)': 'pomorato_codigo_fragmentado/aceita_cafe_som.mp3',
+        'Sino (Sintetizado)': 'Bell',
+        'Padrão (Sintetizado)': 'C5',
+        'Tom Alto (Sintetizado)': 'E5',
+        'Tom Baixo (Sintetizado)': 'G4',
+        'Nenhum': 'none'
+    };
+    // --- FUNÇÃO AUXILIAR PARA POPULAR OS SELETORES DE SOM ---
+const populateSoundSelects = () => {
+    const selects = [
+        dom.settingSoundPomodoroSelect,
+        dom.settingSoundShortBreakSelect,
+        dom.settingSoundLongBreakSelect
+    ];
+    
+    let optionsHTML = '';
+    // Itera sobre a constante SOUNDS que criamos
+    for (const [name, path] of Object.entries(SOUNDS)) {
+        // Usamos o 'path' (ex: 'sounds/som1.mp3' ou 'Bell') como o 'value'
+        optionsHTML += `<option value="${path}">${name}</option>`;
+    }
+
+    selects.forEach(select => {
+        if (select) {
+            select.innerHTML = optionsHTML;
+        }
+    });
+};
     // NOVAS CONSTANTES PARA OS FORMULÁRIOS
 const ENERGIA_OPTIONS = ["Não consegui identificar", "Sinto que ganhei energia", "Sinto que perdi energia"];
 const MEGAFOCO_OPTIONS = ["Não consegui identificar", "Sim", "Não"];
@@ -86,7 +122,9 @@ const MEGAFOCO_OPTIONS = ["Não consegui identificar", "Sim", "Não"];
         settingAutoStartBreaksToggle: document.getElementById('setting-autoStartBreaks'),
         settingAutoStartPomodorosToggle: document.getElementById('setting-autoStartPomodoros'),
         settingLongBreakIntervalInput: document.getElementById('setting-longBreakInterval'),
-        settingAlarmSoundSelect: document.getElementById('setting-alarmSound'),
+        settingSoundPomodoroSelect: document.getElementById('setting-sound-pomodoro'),
+settingSoundShortBreakSelect: document.getElementById('setting-sound-shortBreak'),
+settingSoundLongBreakSelect: document.getElementById('setting-sound-longBreak'),
         settingAlarmVolumeSlider: document.getElementById('setting-alarmVolume'),
         settingBrowserNotificationsToggle: document.getElementById('setting-browserNotifications'),
         notificationPermissionStatus: document.getElementById('notification-permission-status'),
@@ -120,52 +158,88 @@ const MEGAFOCO_OPTIONS = ["Não consegui identificar", "Sim", "Não"];
         manualNotesInput: document.getElementById('manual-notes'),
     };
 let myPomoChart = null; // Variável global para guardar a instância do gráfico
-    // --- Audio Synthesis ---
-    let synth = null;
-    const customSounds = {
-        'Bell': () => {
-            if (!synth || !(synth instanceof Tone.MetalSynth)) {
-                if(synth) synth.dispose();
-                synth = new Tone.MetalSynth({
-                    frequency: 300,
-                    envelope: { attack: 0.001, decay: 0.4, release: 0.2 },
-                    harmonicity: 5.1,
-                    modulationIndex: 12,
-                    resonance: 4000,
-                    octaves: 1.5
-                }).toDestination();
-            }
+   // --- Audio Synthesis ---
+// Nó de volume global. Todos os sons se conectarão a ele.
+const volNode = new Tone.Volume(0).toDestination();
+// Cache para os players de MP3, para não recarregar
+let audioPlayers = {}; 
+
+// Esta função carrega um som e o toca
+const playSoundForMode = (mode) => {
+    if (!Tone) return;
+
+    // 1. Descobrir qual identificador de som usar (o caminho do mp3 ou nome do synth)
+    let soundIdentifier;
+    switch (mode) {
+        case MODES.POMODORO:
+            soundIdentifier = state.settings.soundPomodoro;
+            break;
+        case MODES.SHORT_BREAK:
+            soundIdentifier = state.settings.soundShortBreak;
+            break;
+        case MODES.LONG_BREAK:
+            soundIdentifier = state.settings.soundLongBreak;
+            break;
+        default:
+            soundIdentifier = 'none'; // Fallback
+    }
+
+    if (soundIdentifier === 'none') return;
+
+    // 2. Definir o volume (com base no slider)
+    const volumeDB = state.settings.alarmVolume <= 0 ? -Infinity : Math.log10(state.settings.alarmVolume) * 20;
+    volNode.volume.value = volumeDB;
+
+
+
+    // 3. Tocar o som
+    try {
+        // CASO A: É um som sintetizado (o 'Bell')
+        if (soundIdentifier === 'Bell') {
+            const bellSynth = new Tone.MetalSynth({
+                frequency: 300,
+                envelope: { attack: 0.001, decay: 0.4, release: 0.2 },
+                harmonicity: 5.1,
+                modulationIndex: 12,
+                resonance: 4000,
+                octaves: 1.5
+            }).connect(volNode); // Conecta ao nosso nó de volume
+
             const now = Tone.now();
-            synth.triggerAttackRelease("C4", "8n", now);
-            synth.triggerAttackRelease("E4", "8n", now + 0.15);
-            synth.triggerAttackRelease("G4", "4n", now + 0.3);
-        }
-    };
+            bellSynth.triggerAttackRelease("C4", "8n", now);
+            bellSynth.triggerAttackRelease("E4", "8n", now + 0.15);
+            bellSynth.triggerAttackRelease("G4", "4n", now + 0.3);
+            // Limpa o synth depois de tocar
+            setTimeout(() => bellSynth.dispose(), 1000);
+        } 
+        // CASO B: É um arquivo MP3
+        else if (soundIdentifier.endsWith('.mp3')) {
+            // Verifica se o player já está carregado no cache
+            if (audioPlayers[soundIdentifier]) {
+                audioPlayers[soundIdentifier].start(); // Toca
+            } else {
+                // Cria um novo player, conecta ao volume e toca
+                const player = new Tone.Player(soundIdentifier, () => {
+                    // Callback 'onload' - toca assim que carregar
+                    player.start();
+                }).connect(volNode);
 
-    const playSound = () => {
-        if (!Tone || state.settings.alarmSound === 'none') return;
-        try {
-            Tone.start(); 
-            const sound = state.settings.alarmSound;
-            const volume = state.settings.alarmVolume <= 0 ? -Infinity : Math.log10(state.settings.alarmVolume) * 20;
-
-            if (synth) {
-                synth.dispose();
-                synth = null;
+                // Guarda no cache para uso futuro
+                audioPlayers[soundIdentifier] = player;
             }
-
-            if (customSounds[sound]) {
-                customSounds[sound]();
-            } else if (sound !== 'none') {
-                synth = new Tone.Synth().toDestination();
-                synth.volume.value = volume;
-                synth.triggerAttackRelease(sound, "8n", Tone.now());
-                setTimeout(() => { if (synth && !synth.disposed) synth.dispose(); synth = null; }, 500);
-            }
-        } catch (error) {
-            console.error("Error playing sound:", error);
         }
-    };
+        // CASO C: É um synth simples (C5, E5, G4)
+        else if (['C5', 'E5', 'G4'].includes(soundIdentifier)) {
+            const simpleSynth = new Tone.Synth().connect(volNode); // Conecta ao volNode
+            simpleSynth.triggerAttackRelease(soundIdentifier, "8n", Tone.now());
+            // Limpa o synth depois de tocar
+            setTimeout(() => simpleSynth.dispose(), 500);
+        }
+
+    } catch (error) {
+        console.error("Error playing sound:", error);
+    }
+};
 
     // --- Local Storage ---
     const saveData = () => {
@@ -259,6 +333,7 @@ let myPomoChart = null; // Variável global para guardar a instância do gráfic
     };
 
     const startTimer = () => {
+        Tone.start();
         if (state.isRunning) return;
         if (state.currentMode === MODES.POMODORO && !state.currentTaskId) {
             alert("Por favor, selecione ou adicione uma tarefa para iniciar o foco.");
@@ -301,7 +376,7 @@ let myPomoChart = null; // Variável global para guardar a instância do gráfic
     const timerFinished = () => {
         const previousMode = state.currentMode;
         pauseTimer();
-        playSound();
+      playSoundForMode(previousMode);
         sendNotification(`${MODE_NAMES[previousMode]} concluído!`);
 
       // Salva a sessão PARA QUALQUER MODO (Pomodoro, Pausa Curta ou Longa)
@@ -1053,7 +1128,7 @@ const stopTimer = () => {
         // Chama saveSession com a duração customizada (finalDuration)
         saveSession(finishedMode, finalDuration);
     
-        playSound();
+        playSoundForMode(finishedMode);
         sendNotification(`${MODE_NAMES[finishedMode]} encerrado com ${finalDuration} min.`);
     
         // Reseta o timer para o modo atual (ex: 25:00)
@@ -1111,10 +1186,14 @@ const stopTimer = () => {
     };
 
     const initModals = () => {
-        dom.settingsBtn.addEventListener('click', (e) => { e.preventDefault(); dom.settingPomodoroInput.value = state.settings.pomodoro; dom.settingShortBreakInput.value = state.settings.shortBreak; dom.settingLongBreakInput.value = state.settings.longBreak; dom.settingAutoStartBreaksToggle.checked = state.settings.autoStartBreaks; dom.settingAutoStartPomodorosToggle.checked = state.settings.autoStartPomodoros; dom.settingLongBreakIntervalInput.value = state.settings.longBreakInterval; dom.settingAlarmSoundSelect.value = state.settings.alarmSound; dom.settingAlarmVolumeSlider.value = state.settings.alarmVolume; dom.settingBrowserNotificationsToggle.checked = state.settings.browserNotifications; updateNotificationStatus(); dom.settingBrowserNotificationsToggle.disabled = (Notification.permission === 'denied'); dom.settingsModal.classList.remove('hidden'); });
+        dom.settingsBtn.addEventListener('click', (e) => { e.preventDefault(); dom.settingPomodoroInput.value = state.settings.pomodoro; dom.settingShortBreakInput.value = state.settings.shortBreak; dom.settingLongBreakInput.value = state.settings.longBreak; dom.settingAutoStartBreaksToggle.checked = state.settings.autoStartBreaks; dom.settingAutoStartPomodorosToggle.checked = state.settings.autoStartPomodoros; dom.settingLongBreakIntervalInput.value = state.settings.longBreakInterval; dom.settingSoundPomodoroSelect.value = state.settings.soundPomodoro;
+dom.settingSoundShortBreakSelect.value = state.settings.soundShortBreak;
+dom.settingSoundLongBreakSelect.value = state.settings.soundLongBreak;  dom.settingAlarmVolumeSlider.value = state.settings.alarmVolume; dom.settingBrowserNotificationsToggle.checked = state.settings.browserNotifications; updateNotificationStatus(); dom.settingBrowserNotificationsToggle.disabled = (Notification.permission === 'denied'); dom.settingsModal.classList.remove('hidden'); });
         dom.closeSettingsModalBtn.addEventListener('click', () => dom.settingsModal.classList.add('hidden'));
         dom.saveSettingsBtn.addEventListener('click', () => {
-            state.settings.pomodoro = parseInt(dom.settingPomodoroInput.value) || DEFAULT_SETTINGS.pomodoro; state.settings.shortBreak = parseInt(dom.settingShortBreakInput.value) || DEFAULT_SETTINGS.shortBreak; state.settings.longBreak = parseInt(dom.settingLongBreakInput.value) || DEFAULT_SETTINGS.longBreak; state.settings.autoStartBreaks = dom.settingAutoStartBreaksToggle.checked; state.settings.autoStartPomodoros = dom.settingAutoStartPomodorosToggle.checked; state.settings.longBreakInterval = parseInt(dom.settingLongBreakIntervalInput.value) || DEFAULT_SETTINGS.longBreakInterval; state.settings.alarmSound = dom.settingAlarmSoundSelect.value; state.settings.alarmVolume = parseFloat(dom.settingAlarmVolumeSlider.value); state.settings.browserNotifications = dom.settingBrowserNotificationsToggle.checked;
+            state.settings.pomodoro = parseInt(dom.settingPomodoroInput.value) || DEFAULT_SETTINGS.pomodoro; state.settings.shortBreak = parseInt(dom.settingShortBreakInput.value) || DEFAULT_SETTINGS.shortBreak; state.settings.longBreak = parseInt(dom.settingLongBreakInput.value) || DEFAULT_SETTINGS.longBreak; state.settings.autoStartBreaks = dom.settingAutoStartBreaksToggle.checked; state.settings.autoStartPomodoros = dom.settingAutoStartPomodorosToggle.checked; state.settings.longBreakInterval = parseInt(dom.settingLongBreakIntervalInput.value) || DEFAULT_SETTINGS.longBreakInterval; state.settings.soundPomodoro = dom.settingSoundPomodoroSelect.value;
+state.settings.soundShortBreak = dom.settingSoundShortBreakSelect.value;
+state.settings.soundLongBreak = dom.settingSoundLongBreakSelect.value; state.settings.alarmVolume = parseFloat(dom.settingAlarmVolumeSlider.value); state.settings.browserNotifications = dom.settingBrowserNotificationsToggle.checked;
             saveData();
             if (!state.isRunning) {
                 resetTimer();
@@ -1163,7 +1242,7 @@ const stopTimer = () => {
 
     // --- Initialization ---
     const init = () => {
-        loadData(); initTimerControls(); initTaskControls(); initModals(); renderUI(); updateProjectDatalist(); if ('Notification' in window && Notification.permission !== 'default') { updateNotificationStatus(); }
+        loadData(); populateSoundSelects(); initTimerControls(); initTaskControls(); initModals(); renderUI(); updateProjectDatalist(); if ('Notification' in window && Notification.permission !== 'default') { updateNotificationStatus(); }
     };
 
     init();

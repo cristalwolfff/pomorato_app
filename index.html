@@ -178,17 +178,21 @@
                     </section>
                     <section>
                          <h3 class="text-lg font-semibold mb-3 text-gray-700">🔊 Som</h3>
-                         <div class="mb-4">
-                            <label for="setting-alarmSound" class="block text-sm font-medium text-gray-600 mb-1">Som do Alarme</label>
-                            <select id="setting-alarmSound" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
-                                <option value="C5">Padrão (C5)</option>
-                                <option value="E5">Tom Alto (E5)</option>
-                                <option value="G4">Tom Baixo (G4)</option>
-                                <option value="Bell">Sino</option>
-                                <option value="none">Nenhum</option>
-                        
-                            </select>
-                         </div>
+                         <div class="mb-3">
+    <label for="setting-sound-pomodoro" class="block text-sm font-medium text-gray-600 mb-1">Som do Pomodoro</label>
+    <select id="setting-sound-pomodoro" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+        </select>
+</div>
+<div class="mb-3">
+    <label for="setting-sound-shortBreak" class="block text-sm font-medium text-gray-600 mb-1">Som da Pausa Curta</label>
+    <select id="setting-sound-shortBreak" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+        </select>
+</div>
+<div class="mb-4">
+    <label for="setting-sound-longBreak" class="block text-sm font-medium text-gray-600 mb-1">Som da Pausa Longa</label>
+    <select id="setting-sound-longBreak" class="w-full p-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+        </select>
+</div>
                          <div class="mb-2">
                             <label for="setting-alarmVolume" class="block text-sm font-medium text-gray-600 mb-1">Volume do Alarme</label>
                             <input type="range" id="setting-alarmVolume" min="0" max="1" step="0.05" class="w-full">
