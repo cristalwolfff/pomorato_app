@@ -28,10 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
    // SONS DISPONÍVEIS
     const SOUNDS = {
-        'Som 1 (MP3)': 'squeak_1_som.mp3',
-        'Som 2 (MP3)': 'squeak_2_som.mp3',
-        'Som 3 (MP3)': 'vai_um_golinho_som.mp3',
-        'Som 4 (MP3)': 'aceita_cafe_som.mp3',
+        'Squeak': 'squeak_1_som.mp3',
+        'Freak Squeak': 'squeak_2_som.mp3',
+        'Vai um golinho?': 'vai_um_golinho_som.mp3',
+        'Aceita um café?': 'aceita_cafe_som.mp3',
         'Sino (Sintetizado)': 'Bell',
         'Padrão (Sintetizado)': 'C5',
         'Tom Alto (Sintetizado)': 'E5',
